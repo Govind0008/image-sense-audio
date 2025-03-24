@@ -1,69 +1,76 @@
-# Welcome to your Lovable project
 
-## Project info
+# Image Sense Audio - Final Year Project
 
-**URL**: https://lovable.dev/projects/41a28cc5-0dcf-48cc-9cf4-01738557074c
+This project uses AI to analyze images, describe what it sees in text format, and generate audio narration based on that description.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- Image upload with drag-and-drop support
+- AI scene recognition
+- Editable text description
+- Audio narration of the scene
+- Beautiful UI with animations
 
-**Use Lovable**
+## Tech Stack
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/41a28cc5-0dcf-48cc-9cf4-01738557074c) and start prompting.
+- **Frontend**: React, TypeScript, TailwindCSS, ShadCN UI
+- **Backend**: Python Flask
+- **AI**: Basic image analysis using PIL (Python Imaging Library)
 
-Changes made via Lovable will be committed automatically to this repo.
+## How to Run
 
-**Use your preferred IDE**
+### Backend (Python Flask)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+1. Navigate to the backend folder:
+   ```
+   cd backend
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+2. Create a virtual environment (optional but recommended):
+   ```
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
 
-Follow these steps:
+3. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+4. Run the Flask server:
+   ```
+   python app.py
+   ```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+The backend will run on http://localhost:5000
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Frontend (React)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+1. In a new terminal, navigate to the project root
 
-**Edit a file directly in GitHub**
+2. Install dependencies:
+   ```
+   npm install
+   ```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. Run the development server:
+   ```
+   npm run dev
+   ```
 
-**Use GitHub Codespaces**
+The frontend will run on http://localhost:5173
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Note on Audio Generation
 
-## What technologies are used for this project?
+The current implementation provides a simulated audio experience. In a production environment, you would integrate with a Text-to-Speech service such as:
 
-This project is built with .
+- Google Cloud Text-to-Speech
+- Amazon Polly
+- Microsoft Azure Speech Service
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Future Improvements
 
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/41a28cc5-0dcf-48cc-9cf4-01738557074c) and click on Share -> Publish.
-
-## I want to use a custom domain - is that possible?
-
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+- Integrate a production-ready Text-to-Speech API
+- Improve image analysis with a proper AI model (e.g., Hugging Face transformers)
+- Add user accounts and history
+- Implement more advanced scene recognition

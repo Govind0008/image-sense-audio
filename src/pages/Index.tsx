@@ -48,7 +48,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start px-4 py-12 md:py-20">
+    <div className="min-h-screen flex flex-col items-center justify-start px-4 py-12 md:py-20 bg-gradient-to-br from-secondary/50 to-background">
       <header className="w-full max-w-4xl mb-12 animate-fade-in">
         <div className="text-center">
           <h1 className="text-4xl md:text-5xl font-bold mb-3 text-gradient">
@@ -73,7 +73,7 @@ const Index = () => {
               
               {sceneText && (
                 <div className="w-full animate-fade-in">
-                  <div className="glass-card rounded-2xl p-6 relative">
+                  <div className="glass-card rounded-2xl p-6 relative bg-accent/30">
                     <h3 className="text-lg font-medium mb-3 text-gradient">Edit Description</h3>
                     <Textarea 
                       value={userText} 

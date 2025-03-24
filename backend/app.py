@@ -1,104 +1,120 @@
-
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import uuid
 import base64
-from PIL import Image
+import requests
+from gtts import gTTS
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)  # Enable CORS
 
-# Create uploads folder if it doesn't exist
-if not os.path.exists('uploads'):
-    os.makedirs('uploads')
+# Google API Key (Replace with your actual key)
+API_KEY = "API KEY here akash"
 
-# Free AI model - Simple scene classifier using PIL
+# Create necessary directories
+UPLOAD_FOLDER = 'uploads'
+AUDIO_FOLDER = 'audio'
+for folder in [UPLOAD_FOLDER, AUDIO_FOLDER]:
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+# Function to analyze image using Google Vision API
 def analyze_scene(image_path):
-    # Open image and get basic info
     try:
-        img = Image.open(image_path)
-        width, height = img.size
-        format = img.format
-        mode = img.mode
-        
-        # Simple analysis of image properties
-        brightness = 0
-        colors = {}
-        
-        # Sample pixels to determine basic properties
-        for x in range(0, width, 10):
-            for y in range(0, height, 10):
-                pixel = img.getpixel((x, y))
-                if isinstance(pixel, tuple):
-                    # RGB or RGBA image
-                    r, g, b = pixel[0:3]
-                    brightness += (r + g + b) / 3
-                    color_key = (r//50, g//50, b//50)
-                    colors[color_key] = colors.get(color_key, 0) + 1
-                else:
-                    # Grayscale
-                    brightness += pixel
-        
-        # Analyze dominant colors
-        color_count = len(colors)
-        max_color = max(colors.items(), key=lambda x: x[1])[0] if colors else (0, 0, 0)
-        
-        # Determine scene type based on simple heuristics
-        scene_type = ""
-        description = ""
-        
-        if brightness / (width * height / 100) > 150:
-            scene_type = "bright"
-            if max_color[2] > max_color[0] and max_color[2] > max_color[1]:
-                if color_count > 20:
-                    description = "A bright outdoor scene with a blue sky. There may be trees, buildings, or people visible."
-                else:
-                    description = "A bright blue sky with minimal other elements."
-            elif max_color[1] > max_color[0] and max_color[1] > max_color[2]:
-                description = "A bright natural landscape with lots of greenery, possibly a forest or garden."
-            else:
-                description = "A bright, warm-toned scene, possibly an indoor space or sunset."
-        else:
-            scene_type = "dark"
-            if color_count > 20:
-                description = "A low-light scene with multiple elements. It could be an indoor space, night scene, or a dark landscape."
-            else:
-                description = "A dark, minimalist scene with few distinguishable elements."
-        
-        # Add image details to description
-        description += f" The image is {width}x{height} pixels, in {format} format."
-        
-        return description
-    except Exception as e:
-        print(f"Error analyzing image: {e}")
-        return "Unable to analyze this image. It appears to be a photograph, but I can't determine the specific content."
+        # Convert image to base64
+        with open(image_path, "rb") as image_file:
+            base64_image = base64.b64encode(image_file.read()).decode("utf-8")
 
+        # API Request Payload
+        url = f"https://vision.googleapis.com/v1/images:annotate?key={API_KEY}"
+        request_payload = {
+            "requests": [
+                {
+                    "image": {"content": base64_image},
+                    "features": [
+                        {"type": "LABEL_DETECTION"},
+                        {"type": "WEB_DETECTION"},  # Fetch additional details
+                        {"type": "LANDMARK_DETECTION"}  # Identify famous places
+                    ]
+                }
+            ]
+        }
+
+        # Send request to Google Vision API
+        response = requests.post(url, json=request_payload)
+
+        if response.status_code == 200:
+            data = response.json().get("responses", [])[0]
+
+            # Extract labels
+            labels = data.get("labelAnnotations", [])
+            label_descriptions = [label["description"] for label in labels[:5]]
+
+            # Extract web-based information
+            web_entities = data.get("webDetection", {}).get("webEntities", [])
+            web_descriptions = [web["description"] for web in web_entities if "description" in web][:3]
+
+            # Extract landmarks (if any)
+            landmarks = data.get("landmarkAnnotations", [])
+            landmark_descriptions = [landmark["description"] for landmark in landmarks]
+
+            # Generate a descriptive paragraph
+            description = "The image contains "
+            if label_descriptions:
+                description += ", ".join(label_descriptions) + ". "
+            if landmark_descriptions:
+                description += f"It appears to be {', '.join(landmark_descriptions)}, which is a famous landmark. "
+            if web_descriptions:
+                description += f"This image is associated with {', '.join(web_descriptions)}. "
+            if not (label_descriptions or landmark_descriptions or web_descriptions):
+                description += "an unknown scene."
+
+            return description
+        else:
+            return f"Error: {response.text}"
+
+    except Exception as e:
+        return f"Error analyzing image: {e}"
+
+# Function to convert text to speech using gTTS
+def text_to_speech(text, filename):
+    try:
+        tts = gTTS(text=text, lang="en")
+        audio_path = os.path.join(AUDIO_FOLDER, filename)
+        tts.save(audio_path)
+        return audio_path
+    except Exception as e:
+        return None
+
+# API Endpoint to analyze image and generate speech
 @app.route('/analyze', methods=['POST'])
 def analyze():
     if 'image' not in request.files:
         return jsonify({'error': 'No image provided'}), 400
-    
+
     image_file = request.files['image']
     if image_file.filename == '':
         return jsonify({'error': 'No image selected'}), 400
-    
+
     try:
-        # Generate unique filename and save
+        # Save the uploaded image
         unique_id = str(uuid.uuid4())
         file_extension = os.path.splitext(image_file.filename)[1]
-        filename = f"uploads/{unique_id}{file_extension}"
-        image_file.save(filename)
-        
+        filename = f"{unique_id}{file_extension}"
+        filepath = os.path.join(UPLOAD_FOLDER, filename)
+        image_file.save(filepath)
+
         # Analyze the image
-        description = analyze_scene(filename)
-        
-        # Generate static audio URL (in a real app, you'd use a TTS service)
-        audio_url = f"http://localhost:5000/static/audio/{unique_id}.mp3"
-        
-        # For demo: Create a dummy audio file (in real app, this would be TTS)
-        # Simulating audio by just returning path, as we don't have TTS here
-        
+        description = analyze_scene(filepath)
+
+        # Convert text to speech
+        audio_filename = f"{unique_id}.mp3"
+        audio_path = text_to_speech(description, audio_filename)
+
+        # Generate URLs for frontend
+        audio_url = f"http://localhost:5000/audio/{audio_filename}" if audio_path else None
+
         return jsonify({
             'description': description,
             'audio_url': audio_url
@@ -106,16 +122,10 @@ def analyze():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# Simple route to return a dummy audio file
-@app.route('/static/audio/<filename>', methods=['GET'])
+# API Endpoint to serve audio files
+@app.route('/audio/<filename>', methods=['GET'])
 def get_audio(filename):
-    # This is a dummy endpoint that would actually generate or 
-    # serve the audio file in a real implementation
-    # For a real implementation, you would use a proper TTS service
-    # and either generate and save the audio or stream it
-    
-    # Return a 404 to indicate this is a demonstration
-    return jsonify({'error': 'This is a dummy audio endpoint. In a real implementation, this would serve an audio file.'}), 404
+    return send_from_directory(AUDIO_FOLDER, filename)
 
 if __name__ == '__main__':
     app.run(debug=True)

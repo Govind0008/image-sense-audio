@@ -6,17 +6,20 @@ import SceneResult from '@/components/SceneResult';
 import AudioPlayer from '@/components/AudioPlayer';
 import LoadingState from '@/components/LoadingState';
 import { analyzeImage } from '@/api/imageService';
+import { Textarea } from '@/components/ui/textarea';
 
 const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [sceneText, setSceneText] = useState('');
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [userText, setUserText] = useState('');
 
   const handleImageUpload = async (file: File) => {
     try {
       setIsLoading(true);
       setSceneText('');
       setAudioUrl(null);
+      setUserText('');
       
       // Simulate a small delay to show loading state animation
       await new Promise(resolve => setTimeout(resolve, 500));
@@ -24,6 +27,7 @@ const Index = () => {
       const result = await analyzeImage(file);
       
       setSceneText(result.description);
+      setUserText(result.description);
       setAudioUrl(result.audioUrl);
       
       toast.success('Image analysis complete!', {
@@ -37,6 +41,10 @@ const Index = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setUserText(e.target.value);
   };
 
   return (
@@ -62,6 +70,21 @@ const Index = () => {
           ) : (
             <>
               <SceneResult sceneText={sceneText} isLoading={isLoading} />
+              
+              {sceneText && (
+                <div className="w-full animate-fade-in">
+                  <div className="glass-card rounded-2xl p-6 relative">
+                    <h3 className="text-lg font-medium mb-3 text-gradient">Edit Description</h3>
+                    <Textarea 
+                      value={userText} 
+                      onChange={handleTextChange}
+                      placeholder="You can edit the AI-generated description here..."
+                      className="min-h-[120px] bg-white/50 backdrop-blur-sm border border-primary/20 focus:border-primary/50 transition-all duration-300"
+                    />
+                  </div>
+                </div>
+              )}
+              
               <AudioPlayer audioUrl={audioUrl} isLoading={isLoading} />
             </>
           )}
